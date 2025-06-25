@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-
-interface FormData {
-  name: string;
-  rollNumber: string;
-  className: string;
-  email: string;
-}
+import {FormData} from "../types/type"
 
 interface Props {
   onSubmit: (formData: FormData) => void;

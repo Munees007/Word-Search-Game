@@ -6,27 +6,11 @@ import {submitFormData,updateGameData} from './storeData';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/ReactToastify.min.css'
 import { useNavigate} from 'react-router-dom';
+import {GameData,SelectedPathItem,FoundWord} from "../types/type"
 
 
 
 
-interface SelectedPathItem {
-  letter: string;
-  index: number;
-}
-
-interface FoundWord {
-  word: string;
-  path: SelectedPathItem[];
-  color: string;
-}
-
-interface GameData  {
-  wordsFound: FoundWord[],
-  score:number,
-  chanceleft:number,
-  time : number
-}
 
 const WordSearch: React.FC = () => {
   const words = [[
@@ -94,7 +78,7 @@ const WordSearch: React.FC = () => {
   })
   const [timeLeft, setTimeLeft] = useState<number>(() => {
     const storedTime = localStorage.getItem('timeLeft');
-    return storedTime ? JSON.parse(storedTime) : 1200; // Default to 300 seconds (5 minutes)
+    return storedTime ? JSON.parse(storedTime) : 2400; // Default to 2400 seconds (40 minutes)
   });
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(() => {

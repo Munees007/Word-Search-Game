@@ -1,19 +1,6 @@
 import { ref, set, get ,update} from "firebase/database";
 import { db } from "../firebase"; // Adjust the import path based on your project structure
-
-interface FormData {
-  name: string;
-  rollNumber: string;
-  className: string;
-  email: string;
-}
-
-interface GameData {
-  wordsFound: string[];
-  score: number;
-  chanceLeft: number;
-  time: number;
-}
+import  {FormData,UserData,GameData} from "../types/type";
 
 const submitFormData = async (formData: FormData, gameData: any) => {
   try {
@@ -30,6 +17,7 @@ const submitFormData = async (formData: FormData, gameData: any) => {
 
     // If roll number does not exist, proceed to store the new user data
     await set(userRef, {
+      date:Date.now(),
       formData,
       gameData,
     });
@@ -66,6 +54,22 @@ const getAllUserData = async () => {
     throw error;
   }
 };
+
+const addDate = async (users:UserData[])=>{
+  try{
+    const timestamp = new Date("2024-07-26T00:00:00").getTime();
+    const updates: Record<string, any> = {};
+      users.map((data)=>{
+        const path = `users/${data.formData.rollNumber}/date`
+        updates[path] = timestamp;
+      })
+
+      await update(ref(db),updates);
+  }
+  catch(error){
+
+  }
+}
 const getFlagData = async ():Promise<boolean>=>{
   try {
     const userRef = ref(db,'flag');
@@ -98,4 +102,4 @@ const setFlagData = async (val:boolean)=>{
 };
 
 
-export { submitFormData,updateGameData,getAllUserData,getFlagData,setFlagData};
+export { submitFormData,updateGameData,getAllUserData,getFlagData,setFlagData,addDate};

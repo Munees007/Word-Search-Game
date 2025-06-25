@@ -1,71 +1,71 @@
 import React, { useEffect, useState } from "react";
 import { getAllUserData, getFlagData, setFlagData } from "./storeData";
+import { UserData } from "../types/type";
+import { Button, Select, Modal, Watermark, Table, Tag, Space, Typography } from "antd";
 
-interface UserData {
-  formData: {
-    name: string;
-    rollNumber: string;
-    className: string;
-    email: string;
-  };
-  gameData: {
-    chanceleft: number;
-    score: number;
-    time: number;
-    gridNum:number;
-    wordsFound: {
-      color: string;
-      path: { index: number; letter: string }[];
-      word: string;
-    }[];
-  };
-}
+const { Option } = Select;
+const { Title, Text } = Typography;
 
 const UserDataComponent: React.FC = () => {
   const [userList, setUserList] = useState<UserData[]>([]);
+  const [dates, setDates] = useState<Set<number>>();
   const [dataFetched, setDataFetched] = useState<boolean>(false);
-  const [flag,setFlag] = useState<any>();
+  const [flag, setFlag] = useState<any>();
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
   const fetchData = async (type: string) => {
     try {
       const userData = await getAllUserData();
       const usersArray = Object.keys(userData).map(key => ({ key, ...userData[key] }));
-      
-      // Manual sorting based on the selected type
+
+      const datesSet: Set<number> = new Set();
+      usersArray.forEach((data) => {
+        if (data.date) datesSet.add(data.date);
+      });
+      setDates(datesSet);
+
       if (type === "score") {
-        usersArray.sort((a, b) => b.gameData.score - a.gameData.score);
-      } else if (type === "time") {
-        usersArray.sort((a, b) => b.gameData.time - a.gameData.time);
-      } else if (type === "chanceleft") {
-        usersArray.sort((a, b) => b.gameData.chanceleft - a.gameData.chanceleft);
-      }
+  usersArray.sort((a, b) => b.gameData.score - a.gameData.score);
+} else if (type === "time") {
+  usersArray.sort((a, b) => b.gameData.time - a.gameData.time); // MORE time left = better
+} else if (type === "chanceleft") {
+  usersArray.sort((a, b) => b.gameData.chanceleft - a.gameData.chanceleft);
+} else if (type === "all") {
+  usersArray.sort((a, b) => {
+    // 1. Higher score is better
+    if (b.gameData.score !== a.gameData.score)
+      return b.gameData.score - a.gameData.score;
+
+    // 2. Higher chance left is better
+    if (b.gameData.chanceleft !== a.gameData.chanceleft)
+      return b.gameData.chanceleft - a.gameData.chanceleft;
+
+    // 3. Higher time left is better
+    return b.gameData.time - a.gameData.time;
+  });
+}
+
+
+
       const getFlag = await getFlagData();
       setUserList(usersArray);
       setFlag(getFlag);
-      console.log(usersArray)
-      console.log(flag)
       setDataFetched(true);
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
   };
 
-  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = event.target.value;
-    fetchData(selectedValue);
+  const handleSelectChange = (value: string) => {
+    fetchData(value);
   };
-  const handleTimerStart = async () =>{
+
+  const handleTimerStart = async () => {
     await setFlagData(!flag);
     setFlag(!flag);
-  }
-
-  useEffect(() => {
-    fetchData("all");
-  }, [dataFetched,flag]);
-
-  if (!userList) {
-    return <p>Loading...</p>;
-  }
+  };
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -73,60 +73,121 @@ const UserDataComponent: React.FC = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  const showWords = (words: { word: string }[] | undefined) => {
+    setSelectedWords(words?.map(w => w.word) || []);
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    fetchData("all");
+  }, [dataFetched, flag]);
+
+  const columns = [
+    {
+      title: "Name",
+      dataIndex: ["formData", "name"],
+      key: "name",
+    },
+    {
+      title: "Roll No",
+      dataIndex: ["formData", "rollNumber"],
+      key: "rollNumber",
+    },
+    {
+      title: "Class",
+      dataIndex: ["formData", "className"],
+      key: "className",
+    },
+    {
+      title: "Email",
+      dataIndex: ["formData", "email"],
+      key: "email",
+    },
+    {
+      title: "Grid Num",
+      dataIndex: ["gameData", "gridNum"],
+      key: "gridNum",
+      render: (val: number) => val + 1
+    },
+    {
+      title: "Score",
+      dataIndex: ["gameData", "score"],
+      key: "score",
+      render: (score: number) => <Tag color="blue">{score}</Tag>
+    },
+    {
+      title: "Chance Left",
+      dataIndex: ["gameData", "chanceleft"],
+      key: "chanceleft",
+      render: (chance: number) => <Tag color="orange">{chance}</Tag>
+    },
+    {
+      title: "Time Left",
+      dataIndex: ["gameData", "time"],
+      key: "time",
+      render: (val: number) => formatTime(val)
+    },
+    {
+      title: "Words Found",
+      key: "wordsFound",
+      render: (_: any, record: UserData) => (
+        <Button onClick={() => showWords(record.gameData.wordsFound)} size="small">View</Button>
+      )
+    },
+  ];
+
   return (
-    <div className="w-full h-screen overflow-auto bg-teal-900 p-5">
-      <h2 className="text-center font-playfair text-white text-3xl font-bold">
-        All USER DETAILS
-      </h2>
-      <p className="text-white">Time Started : {flag ? "true" : "false"}</p>
-        <button onClick={handleTimerStart} className="bg-teal-400 px-4 py-1 rounded-md border-2 font-playfair font-bold">{flag ? "off" : "on"}</button>
-      <div className="absolute right-5">
-        <select onChange={handleSelectChange} className="bg-teal-400 border-2 border-white rounded-md shadow-md hover:bg-teal-300 shadow-black">
-          <option value="all">Overall</option>
-          <option value="score">Score</option>
-          <option value="time">Time</option>
-          <option value="chanceleft">Chance Left</option>
-        </select>
-      </div>
-      <table className="w-full overflow-auto border-collapse mt-10">
-        <thead className="rounded-lg text-white text-center font-playfair border-2">
-          <tr>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">NAME</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">ROLL NO</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">CLASS</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">EMAIL</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">gridNum</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">SCORE</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">CHANCE LEFT</th>
-            <th className="py-3 w-fit border-r-2 bg-teal-600">TIME LEFT</th>
-            <th className="py-3 w-96 bg-teal-600">WORDS FOUND</th>
-          </tr>
-        </thead>
-        <tbody>
-          {userList.map((user, index) => (
-            <tr key={index} className="text-black font-semibold font-playfair border-2">
-              <td className="pl-2 w-fit border-r-2 bg-teal-400">{user.formData.name}</td>
-              <td className="w-fit border-r-2 bg-teal-400 text-center">{user.formData.rollNumber}</td>
-              <td className="w-fit border-r-2 bg-teal-400 text-center">{user.formData.className}</td>
-              <td className="pl-2 w-fit border-r-2 bg-teal-400">{user.formData.email}</td>
-              <td className="pl-2 w-fit border-r-2 bg-teal-400">{user.gameData.gridNum + 1}</td>
-              <td className="w-fit border-r-2 bg-teal-400 text-center">{user.gameData.score}</td>
-              <td className="w-fit border-r-2 bg-teal-400 text-center">{user.gameData.chanceleft}</td>
-              <td className="w-fit border-r-2 bg-teal-400 text-center">{formatTime(user.gameData.time)}</td>
-              <td className="bg-teal-400 overflow-auto">
-                <div className="flex flex-col h-20">
-                  {
-                    user.gameData.wordsFound ?
-                  user.gameData.wordsFound.map((val, index) => (
-                    <p key={index} className="ml-2">{val.word}</p>
-                  )):<p className="ml-2">NO Words Found</p>
-                }
-                </div>
-              </td>
-            </tr>
+    <div className="w-full h-screen overflow-auto bg-white p-5">
+      <Title level={2} className="text-center" style={{ color: '#006d75' }}>All USER DETAILS</Title>
+
+      <Space className="mb-4" size="large" wrap>
+        <Text strong>Time Started: </Text>
+        <Tag color={flag ? "green" : "red"}>{flag ? "true" : "false"}</Tag>
+        <Button onClick={handleTimerStart} type="primary">{flag ? "Off" : "On"}</Button>
+
+        <Select defaultValue="all" onChange={handleSelectChange} style={{ width: 160 }}>
+          <Option value="all">Overall</Option>
+          <Option value="score">Score</Option>
+          <Option value="time">Time</Option>
+          <Option value="chanceleft">Chance Left</Option>
+        </Select>
+
+        <Select placeholder="Select Date" onChange={(value) => setSelectedDate(value)}
+  allowClear style={{ width: 180 }}>
+          {[...(dates ?? [])].map((value, index) => (
+            <Option key={index} value={value} >
+              {new Date(value).toLocaleDateString()}
+            </Option>
           ))}
-        </tbody>
-      </table>
+        </Select>
+      </Space>
+
+      <Table
+        columns={columns}
+        dataSource={
+    selectedDate
+      ? userList.filter(user => user.date === selectedDate)
+      : userList
+  }
+        rowKey={(record) => record.formData.rollNumber}
+        bordered
+        pagination={{ pageSize: 10 }}
+        scroll={{ x: 'max-content' }}
+      />
+
+      <Modal open={isModalOpen} onCancel={() => setIsModalOpen(false)} footer={null} title="Words Found">
+        <Watermark content="MW" font={{ fontSize: 16 }} gap={[100, 100]}>
+          <div className="max-h-60 overflow-auto">
+            {selectedWords.length > 0 ? (
+              selectedWords.map((word, idx) => (
+                <p key={idx}>{idx+1}) {word}</p>
+              ))
+            ) : (
+              <p className="text-gray-400">No Words Found</p>
+            )}
+          </div>
+        </Watermark>
+      </Modal>
     </div>
   );
 };
