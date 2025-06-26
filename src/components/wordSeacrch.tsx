@@ -78,7 +78,7 @@ const WordSearch: React.FC = () => {
   })
   const [timeLeft, setTimeLeft] = useState<number>(() => {
     const storedTime = localStorage.getItem('timeLeft');
-    return storedTime ? JSON.parse(storedTime) : 2400; // Default to 2400 seconds (40 minutes)
+    return storedTime ? JSON.parse(storedTime) : 1800; // Default to 2400 seconds (40 minutes)
   });
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(() => {
@@ -371,10 +371,10 @@ const WordSearch: React.FC = () => {
         </div>
       </div>
 
-      <div className="fixed flex flex-col items-center bottom-4 right-20 text-white py-2 px-4 rounded">
+      <div className="fixed flex flex-col bg-black/80 items-center bottom-4 right-20 text-white py-2 px-4 rounded">
         { gameOver ?<button className='mb-10 bg-black/80 px-4 py-1 rounded-md border-2 border-white' onClick={handleExit}>Exit</button> : <></>}
         <RiTimerFlashLine size={40} className='' />
-        <p className='text-2xl font-playfair'>{formatTime(timeLeft)}</p>
+        <p className='text-2xl font-playfair w-20 text-center '>{formatTime(timeLeft)}</p>
       </div>
       {showForm && <Form onSubmit={handleFormSubmit} />}
       <ToastContainer position='top-right'/>

@@ -16,7 +16,13 @@ const App:React.FC = ()=>{
     "Caught you red-handed! Stick to the rules and enjoy the game.",
   ];
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isMWPage, setIsMWPage] = useState(false);
 
+  useEffect(() => {
+    // ✅ Only run this after mount (after <BrowserRouter> is applied)
+    const pathname = window.location.pathname;
+    setIsMWPage(pathname === "/mw");
+  }, []);
   const warnPlayer = () => {
     const randomMessage =
       warningToastMessages[Math.floor(Math.random() * warningToastMessages.length)];
@@ -46,6 +52,10 @@ const App:React.FC = ()=>{
   useEffect(() => {
     document.addEventListener("fullscreenchange", monitorFullScreen);
 
+    if(localStorage.getItem('WordWizardDate') !== new Date().toLocaleDateString()) {
+      localStorage.clear();
+      localStorage.setItem('WordWizardDate', new Date().toLocaleDateString());
+    }
     const disableInspect = (e: MouseEvent | KeyboardEvent) => {
       // Disable right-click
       if (e.type === "contextmenu") {
@@ -80,7 +90,7 @@ const App:React.FC = ()=>{
     return(
       <ThemeProvider>
       <BrowserRouter>
-      {!isFullScreen &&  (
+      {!isFullScreen && !isMWPage &&  (
           <div className="relative w-full h-screen gap-10 flex flex-col justify-center items-center bg-gradient-to-br from-gray-800 via-gray-900 to-black">
       {/* Title */}
       <h1 className="text-5xl md:text-6xl font-extrabold text-white font-playwrite mb-10 drop-shadow-lg">
@@ -103,7 +113,7 @@ const App:React.FC = ()=>{
       </div>
     </div>
         )}
-        {isFullScreen && (
+        {(isFullScreen || isMWPage)&& (
       <Routes>
         <Route path="/" element={<HomePage/>}/>
         <Route path="/wordGame" element={<WordSearch/>}></Route>

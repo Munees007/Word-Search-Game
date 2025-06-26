@@ -1,28 +1,44 @@
 import React, { useEffect, useState } from "react";
 import { getAllUserData, getFlagData, setFlagData } from "./storeData";
 import { UserData } from "../types/type";
-import { Button, Select, Modal, Watermark, Table, Tag, Space, Typography } from "antd";
+import { Button, Select, Modal, Watermark, Table, Tag, Space, Typography, Form, Input } from "antd";
+import { toast, ToastContainer } from "react-toastify";
+import 'react-toastify/ReactToastify.min.css';
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 
 const UserDataComponent: React.FC = () => {
+
+
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(true);
+  const [form] = Form.useForm();
+
+  
+  const STATIC_USERNAME = "klaus";
+  const STATIC_PASSWORD = "dean@impala";
+
   const [userList, setUserList] = useState<UserData[]>([]);
-  const [dates, setDates] = useState<Set<number>>();
+  const [dates, setDates] = useState<Set<string>>();
   const [dataFetched, setDataFetched] = useState<boolean>(false);
   const [flag, setFlag] = useState<any>();
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const fetchData = async (type: string) => {
     try {
       const userData = await getAllUserData();
       const usersArray = Object.keys(userData).map(key => ({ key, ...userData[key] }));
 
-      const datesSet: Set<number> = new Set();
+      const datesSet: Set<string> = new Set();
       usersArray.forEach((data) => {
-        if (data.date) datesSet.add(data.date);
+        if (data.date){
+          const dateObj = new Date(data.date); // convert number to Date
+          const dateOnly = dateObj.toISOString().split('T')[0]; // get YYYY-MM-DD
+          datesSet.add(dateOnly);
+        } 
       });
       setDates(datesSet);
 
@@ -76,6 +92,17 @@ const UserDataComponent: React.FC = () => {
   const showWords = (words: { word: string }[] | undefined) => {
     setSelectedWords(words?.map(w => w.word) || []);
     setIsModalOpen(true);
+  };
+
+  const handleLogin = () => {
+    const { username, password } = form.getFieldsValue();
+    if (username === STATIC_USERNAME && password === STATIC_PASSWORD) {
+      setAuthenticated(true);
+      setLoginModalOpen(false);
+      toast.success("Login successful!");
+    } else {
+      toast.error("Invalid credentials");
+    }
   };
 
   useEffect(() => {
@@ -138,6 +165,21 @@ const UserDataComponent: React.FC = () => {
 
   return (
     <div className="w-full h-screen overflow-auto bg-white p-5">
+      <Modal open={loginModalOpen} footer={null} closable={false} title="Admin Login">
+        <Form form={form} layout="vertical" onFinish={handleLogin}>
+          <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Input placeholder="Enter username" />
+          </Form.Item>
+          <Form.Item name="password" label="Password" rules={[{ required: true }]}>
+            <Input.Password placeholder="Enter password" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" block>
+            Login
+          </Button>
+        </Form>
+      </Modal>
+      { authenticated && (
+      <>
       <Title level={2} className="text-center" style={{ color: '#006d75' }}>All USER DETAILS</Title>
 
       <Space className="mb-4" size="large" wrap>
@@ -166,7 +208,10 @@ const UserDataComponent: React.FC = () => {
         columns={columns}
         dataSource={
     selectedDate
-      ? userList.filter(user => user.date === selectedDate)
+      ? userList.filter(user => { 
+        const dateObj = new Date(user.date); // convert number to Date
+        const dateOnly = dateObj.toISOString().split('T')[0]; // get YYYY-MM-DD
+        return dateOnly === selectedDate})
       : userList
   }
         rowKey={(record) => record.formData.rollNumber}
@@ -188,6 +233,9 @@ const UserDataComponent: React.FC = () => {
           </div>
         </Watermark>
       </Modal>
+      </>
+      )}
+      <ToastContainer position="top-right"/>
     </div>
   );
 };
