@@ -211,10 +211,10 @@ const UserDataComponent: React.FC = () => {
       ? userList.filter(user => { 
         if (user.date) {
     const dateObj = new Date(user.date);
-    if (!isNaN(dateObj)) {
+    
       const dateOnly = dateObj.toISOString().split('T')[0];
       return dateOnly === selectedDate;
-    }
+    
   }
   return false;
       })
