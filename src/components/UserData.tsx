@@ -209,9 +209,15 @@ const UserDataComponent: React.FC = () => {
         dataSource={
     selectedDate
       ? userList.filter(user => { 
-        const dateObj = new Date(user.date); // convert number to Date
-        const dateOnly = dateObj.toISOString().split('T')[0]; // get YYYY-MM-DD
-        return dateOnly === selectedDate})
+        if (user.date) {
+    const dateObj = new Date(user.date);
+    if (!isNaN(dateObj)) {
+      const dateOnly = dateObj.toISOString().split('T')[0];
+      return dateOnly === selectedDate;
+    }
+  }
+  return false;
+      })
       : userList
   }
         rowKey={(record) => record.formData.rollNumber}
